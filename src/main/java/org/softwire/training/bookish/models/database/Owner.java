@@ -3,9 +3,7 @@ package org.softwire.training.bookish.models.database;
 import org.jdbi.v3.core.mapper.reflect.ColumnName;
 import org.jdbi.v3.core.mapper.reflect.JdbiConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Owner {
 
@@ -13,7 +11,7 @@ public class Owner {
 
     private String name;
 
-    private List<Cat> cats;
+    private Set<Cat> cats;
 
     public Owner(){
        this(0,"");
@@ -23,7 +21,7 @@ public class Owner {
     public Owner (@ColumnName("oid") int oid, @ColumnName("oname")String oname){
         this.id = oid;
         this.name = oname;
-        cats = new ArrayList<>();
+        cats = new HashSet<>();
     }
 
     @Override
@@ -56,13 +54,11 @@ public class Owner {
         return Objects.hash(id, name);
     }
 
-
     public void addCat(Cat cat){
-        // todo - don't add same cat twice
         cats.add(cat);
     }
 
-    public List<Cat> getCats() {
+    public Set<Cat> getCats() {
         return cats;
     }
 

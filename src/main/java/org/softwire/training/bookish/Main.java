@@ -116,9 +116,9 @@ public class Main {
          System.out.println("collected:" + owners);
          */
 
-        Map<Integer, Owner> knownOwners = new HashMap<>();
-        Object ownerMap = jdbi.withHandle(handle -> {
-                    List<Owner> owners = handle.createQuery(ownerQuery)
+        Set<Owner> ownerSet = jdbi.withHandle(handle -> {
+            Map<Integer, Owner> knownOwners = new HashMap<>();
+                    Set<Owner> owners = handle.createQuery(ownerQuery)
                             .map((rs, ctx) -> {
                                 RowMapper<Owner> ownerMapper = BeanMapper.of(Owner.class, "o");
                                 Owner ownerFromRow = ownerMapper.map(rs, ctx);
@@ -135,13 +135,13 @@ public class Main {
 
                                 return currentOwner;
 
-                            }).list();
+                            }).stream().collect(Collectors.toSet());
 
                     return owners;
                 }
         );
-        System.out.println("Raw list :" + ownerMap);
-        System.out.println("Map with Owners->Cats :" + knownOwners);
+        System.out.println("Owner set :" + ownerSet);
+
     }
 
     private void getOwnerCatMap(Jdbi jdbi, String ownerQuery) {
@@ -166,9 +166,7 @@ public class Main {
                     .stream()
                     .collect(Collectors.toList());
 
-
             return owners;
-
         });
         System.out.println("Owners " + ownerList);
     }

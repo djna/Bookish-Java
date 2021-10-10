@@ -4,6 +4,7 @@ import org.jdbi.v3.core.mapper.reflect.ColumnName;
 import org.jdbi.v3.core.mapper.reflect.JdbiConstructor;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Cat {
     int id;
@@ -24,6 +25,19 @@ public class Cat {
         this.name = name;
         this.age = age;
         this.owner_id = owner_id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Cat cat = (Cat) o;
+        return id == cat.id && owner_id == cat.owner_id && name.equals(cat.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, owner_id);
     }
 
     public int getId() {
