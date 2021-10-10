@@ -40,7 +40,7 @@ public class Main {
         mainInstance.jdbiMethod(connectionString, connectionProps);
     }
 
-    private  void jdbcMethod(String connectionString, Properties properties) throws SQLException {
+    private void jdbcMethod(String connectionString, Properties properties) throws SQLException {
         System.out.println("JDBC method...");
 
         // TODO: print out the details of all the books (using JDBC)
@@ -56,7 +56,7 @@ public class Main {
 
             ResultSet resultSet = statement.executeQuery(query);
 
-            while ( resultSet.next() ) {
+            while (resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String name = resultSet.getString("name");
                 System.out.printf("%d %s%n", id, name);
@@ -68,7 +68,7 @@ public class Main {
 
     }
 
-    private  void jdbiMethod(String url, Properties poperties) {
+    private void jdbiMethod(String url, Properties poperties) {
         System.out.println("\nJDBI method...");
 
         // TODO: print out the details of all the books (using JDBI)
@@ -106,40 +106,42 @@ public class Main {
 
     private void getGenericOwnerMap(Jdbi jdbi, String ownerQuery) {
         /** example using Guava, but result is not easy to use
-        Multimap<Owner, Cat> owners = jdbi.withHandle(handle -> {
-            Multimap<Owner, Cat> map = handle.createQuery(ownerQuery)
-                    .registerRowMapper(BeanMapper.factory(Owner.class, "o"))
-                    .registerRowMapper(BeanMapper.factory(Cat.class))
-                    .collectInto(new GenericType<Multimap<Owner, Cat>>() {});
-            return map;
-        });
+         Multimap<Owner, Cat> owners = jdbi.withHandle(handle -> {
+         Multimap<Owner, Cat> map = handle.createQuery(ownerQuery)
+         .registerRowMapper(BeanMapper.factory(Owner.class, "o"))
+         .registerRowMapper(BeanMapper.factory(Cat.class))
+         .collectInto(new GenericType<Multimap<Owner, Cat>>() {});
+         return map;
+         });
          System.out.println("collected:" + owners);
          */
 
         Map<Integer, Owner> knownOwners = new HashMap<>();
         Object ownerMap = jdbi.withHandle(handle -> {
-            handle.createQuery(ownerQuery)
-                    .map( (rs, ctx) -> {
-                        RowMapper<Owner> ownerMapper = BeanMapper.of(Owner.class, "o");
-                        Owner ownerFromRow = ownerMapper.map(rs,ctx);
+                    List<Owner> owners = handle.createQuery(ownerQuery)
+                            .map((rs, ctx) -> {
+                                RowMapper<Owner> ownerMapper = BeanMapper.of(Owner.class, "o");
+                                Owner ownerFromRow = ownerMapper.map(rs, ctx);
 
-                        RowMapper<Cat> catMapper = BeanMapper.of(Cat.class);
-                        Cat cat = catMapper.map(rs,ctx);
+                                RowMapper<Cat> catMapper = BeanMapper.of(Cat.class);
+                                Cat cat = catMapper.map(rs, ctx);
 
-                        Owner currentOwner = knownOwners.computeIfAbsent(
-                                ownerFromRow.getId(),
-                                ( id -> ownerFromRow )
-                        );
+                                Owner currentOwner = knownOwners.computeIfAbsent(
+                                        ownerFromRow.getId(),
+                                        (id -> ownerFromRow)
+                                );
 
-                        currentOwner.addCat(cat);
+                                currentOwner.addCat(cat);
 
-                        return currentOwner;
+                                return currentOwner;
 
-                     } );
+                            }).list();
 
-            return knownOwners.entrySet().stream().collect(Collectors.toList());
-        });
-        System.out.println("listed :" + ownerMap);
+                    return owners;
+                }
+        );
+        System.out.println("Raw list :" + ownerMap);
+        System.out.println("Map with Owners->Cats :" + knownOwners);
     }
 
     private void getOwnerCatMap(Jdbi jdbi, String ownerQuery) {
