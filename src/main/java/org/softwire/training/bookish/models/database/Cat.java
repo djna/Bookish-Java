@@ -20,7 +20,6 @@ public class Cat {
                 String name,
                 int age,
                 int owner_id){
-        System.out.println("build: " + name);
         this.id = id;
         this.name = name;
         this.age = age;

@@ -1,27 +1,19 @@
 package org.softwire.training.bookish;
 
 import com.google.common.collect.Multimap;
-import com.mysql.cj.jdbc.MysqlDataSource;
+import com.mysql.cj.result.Row;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.generic.GenericType;
+import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
-import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
-import org.jdbi.v3.core.spi.JdbiPlugin;
 import org.jdbi.v3.guava.GuavaPlugin;
-import org.jdbi.v3.sqlobject.config.*;
-import org.jdbi.v3.sqlobject.customizer.Bind;
-import org.jdbi.v3.sqlobject.statement.SqlQuery;
-import org.jdbi.v3.sqlobject.statement.UseRowReducer;
+
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.softwire.training.bookish.models.database.*;
-import org.stringtemplate.v4.misc.MultiMap;
 
 
-import javax.sql.DataSource;
 import java.sql.*;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -102,20 +94,84 @@ public class Main {
 
         System.out.println("All owners:" + ownerList);
 
-        String ownerQuery = "SELECT o.oid, o.oname, " +
+        String ownerQuery = "SELECT o.id oid, o.name oname, " +
                 "c.id, c.name, c.age, c.owner_id " +
-                "FROM cats c, owners o where c.owner_id = o.oid";
+                "FROM cats c, owners o where c.owner_id = o.id";
+
+        getGenericOwnerMap(jdbi, ownerQuery);
+
+        getOwnerCatMap(jdbi, ownerQuery);
+
+    }
+
+    private void getGenericOwnerMap(Jdbi jdbi, String ownerQuery) {
+        /** example using Guava, but result is not easy to use
         Multimap<Owner, Cat> owners = jdbi.withHandle(handle -> {
             Multimap<Owner, Cat> map = handle.createQuery(ownerQuery)
-                    .registerRowMapper(ConstructorMapper.factory(Owner.class, "o"))
-                    .registerRowMapper(ConstructorMapper.factory(Cat.class, "c"))
+                    .registerRowMapper(BeanMapper.factory(Owner.class, "o"))
+                    .registerRowMapper(BeanMapper.factory(Cat.class))
                     .collectInto(new GenericType<Multimap<Owner, Cat>>() {});
             return map;
         });
+         System.out.println("collected:" + owners);
+         */
 
+        Map<Integer, Owner> knownOwners = new HashMap<>();
+        Object ownerMap = jdbi.withHandle(handle -> {
+            handle.createQuery(ownerQuery)
+                    .map( (rs, ctx) -> {
+                        RowMapper<Owner> ownerMapper = BeanMapper.of(Owner.class, "o");
+                        Owner ownerFromRow = ownerMapper.map(rs,ctx);
 
+                        RowMapper<Cat> catMapper = BeanMapper.of(Cat.class);
+                        Cat cat = catMapper.map(rs,ctx);
 
+                        Owner currentOwner = knownOwners.computeIfAbsent(
+                                ownerFromRow.getId(),
+                                ( id -> ownerFromRow )
+                        );
+
+                        currentOwner.addCat(cat);
+
+                        return currentOwner;
+
+                     } );
+
+            return knownOwners.entrySet().stream().collect(Collectors.toList());
+        });
+        System.out.println("listed :" + ownerMap);
     }
+
+    private void getOwnerCatMap(Jdbi jdbi, String ownerQuery) {
+        List<Owner> ownerList = jdbi.withHandle(handle -> {
+
+            List<Owner> owners = handle.createQuery(ownerQuery)
+                    .registerRowMapper(BeanMapper.factory(Owner.class, "o"))
+                    .registerRowMapper(BeanMapper.factory(Cat.class))
+                    .reduceRows(new LinkedHashMap<Integer, Owner>(),
+                            (map, rowView) -> {
+                                Owner ownerFromRow = rowView.getRow(Owner.class);
+
+                                Owner ownerInResultMap = map.computeIfAbsent(
+                                        ownerFromRow.getId(),
+                                        id -> ownerFromRow);
+
+                                ownerInResultMap.addCat(rowView.getRow(Cat.class));
+
+                                return map;
+                            })
+                    .values()
+                    .stream()
+                    .collect(Collectors.toList());
+
+
+            return owners;
+
+        });
+        System.out.println("Owners " + ownerList);
+    }
+
+
 
 /*
 "o.oid oid, o.oname oname, " +

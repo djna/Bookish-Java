@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class Owner {
-    @ColumnName("oid")
-    private int oid;
-    @ColumnName("oname")
-    private String oname;
+
+    private int id;
+
+    private String name;
 
     private List<Cat> cats;
 
@@ -21,19 +21,26 @@ public class Owner {
 
     @JdbiConstructor
     public Owner (@ColumnName("oid") int oid, @ColumnName("oname")String oname){
-        System.out.println("build: " + oname);
-        this.oid = oid;
-        this.oname = oname;
+        this.id = oid;
+        this.name = oname;
         cats = new ArrayList<>();
     }
 
     @Override
     public String toString() {
         return "Owner{" +
-                "o_id=" + oid +
-                ", o_name='" + oname + '\'' +
+                "o_id=" + id +
+                ", o_name='" + name + '\'' +
                 ", cats=" + cats +
                 '}';
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override
@@ -41,21 +48,14 @@ public class Owner {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Owner owner = (Owner) o;
-        return oid == owner.oid && oname.equals(owner.oname) && cats.equals(owner.cats);
-    }
-
-    public String getOname() {
-        return oname;
-    }
-
-    public void setOname(String oname) {
-        this.oname = oname;
+        return id == owner.id && name.equals(owner.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(oid, oname, cats);
+        return Objects.hash(id, name);
     }
+
 
     public void addCat(Cat cat){
         // todo - don't add same cat twice
@@ -66,11 +66,11 @@ public class Owner {
         return cats;
     }
 
-    public int getOid() {
-        return oid;
+    public int getId() {
+        return id;
     }
 
-    public void setOid(int oid) {
-        this.oid = oid;
+    public void setId(int id) {
+        this.id = id;
     }
 }

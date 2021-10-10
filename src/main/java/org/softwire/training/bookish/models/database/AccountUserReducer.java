@@ -13,7 +13,7 @@ public class AccountUserReducer  implements LinkedHashMapRowReducer<Integer, Own
             final Owner owner = map.computeIfAbsent(rowView.getColumn("id", Integer.class),
                     id -> rowView.getRow(Owner.class));
             if (rowView.getColumn("owner", Integer.class) != null) {
-                owner.addCat(rowView.getRow(Cat.class));
+                //owner.addCat(rowView.getRow(Cat.class));
             }
         }
 
